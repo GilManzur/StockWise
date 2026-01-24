@@ -3,13 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDIu2yRapA6J1WrBHVtciBouBhrEDGb4Mw",
+  authDomain: "stockwise-23868.firebaseapp.com",
+  databaseURL: "https://stockwise-23868-default-rtdb.firebaseio.com",
+  projectId: "stockwise-23868",
+  storageBucket: "stockwise-23868.firebasestorage.app",
+  messagingSenderId: "1064015174406",
+  appId: "1:1064015174406:web:fd4a2740ed0904c6141c87"
 };
 
 const app = initializeApp(firebaseConfig);
