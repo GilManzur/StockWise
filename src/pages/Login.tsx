@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,6 +28,9 @@ const registerSchema = z.object({
   phoneNumber: z.string().min(6, 'Phone number must be at least 6 digits').max(15, 'Phone number is too long').regex(/^\d+$/, 'Phone number must contain only digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(6, 'Please confirm your password'),
+  restaurantName: z.string().min(1, 'Restaurant name is required').max(100, 'Restaurant name is too long'),
+  restaurantAddress: z.string().min(1, 'Restaurant address is required').max(200, 'Address is too long'),
+  chainName: z.string().max(100, 'Chain name is too long').optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -64,6 +66,9 @@ const Login: React.FC = () => {
       phoneNumber: '',
       password: '',
       confirmPassword: '',
+      restaurantName: '',
+      restaurantAddress: '',
+      chainName: '',
     },
   });
 
@@ -116,6 +121,9 @@ const Login: React.FC = () => {
         country: data.country,
         phonePrefix: data.phonePrefix,
         phoneNumber: data.phoneNumber,
+        restaurantName: data.restaurantName,
+        restaurantAddress: data.restaurantAddress,
+        chainName: data.chainName,
       });
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -366,6 +374,59 @@ const Login: React.FC = () => {
                         </FormItem>
                       )}
                     />
+                  </div>
+
+                  {/* Restaurant Section Header */}
+                  <div className="pt-4 pb-2 border-t border-border">
+                    <h3 className="text-sm font-medium text-foreground">Restaurant Details</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Set up your first restaurant</p>
+                  </div>
+
+                  <FormField
+                    control={registerForm.control}
+                    name="restaurantName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Restaurant Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="My Restaurant" disabled={loading} className="h-11" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={registerForm.control}
+                    name="restaurantAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main Street, City" disabled={loading} className="h-11" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={registerForm.control}
+                    name="chainName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Chain Name (שם הרשת) - Optional</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Restaurant Chain" disabled={loading} className="h-11" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Password Section */}
+                  <div className="pt-4 pb-2 border-t border-border">
+                    <h3 className="text-sm font-medium text-foreground">Security</h3>
                   </div>
 
                   <FormField

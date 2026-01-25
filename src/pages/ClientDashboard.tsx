@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ClientDashboard: React.FC = () => {
   const { userProfile } = useAuth();
-  const { devices, loading } = useRealtimeDevices(userProfile?.restaurant_id);
+  // Use the first restaurant ID from the array for now
+  const { devices, loading } = useRealtimeDevices(userProfile?.restaurants?.[0]);
 
   return (
     <DashboardLayout>

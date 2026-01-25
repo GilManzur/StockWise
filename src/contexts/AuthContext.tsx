@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { ref, get, child } from 'firebase/database';
-import { auth, database, firestore, createUserWithEmailAndPassword, doc, setDoc, getDoc } from '@/lib/firebase';
-import { UserProfile } from '@/types';
+import { auth, database, firestore, createUserWithEmailAndPassword, doc, setDoc, getDoc, collection, addDoc, updateDoc, arrayUnion } from '@/lib/firebase';
+import { UserProfile, RestaurantData } from '@/types';
+import { formatDateWithTimezone } from '@/lib/dateUtils';
 
 interface RegisterData {
   email: string;
@@ -12,6 +13,9 @@ interface RegisterData {
   country: string;
   phonePrefix: string;
   phoneNumber: string;
+  restaurantName: string;
+  restaurantAddress: string;
+  chainName?: string;
 }
 
 interface AuthContextType {
@@ -51,10 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           firstName: data.firstName,
           lastName: data.lastName,
           country: data.country,
-          phonePrefix: data.phonePrefix,
-          phoneNumber: data.phoneNumber,
+          phone: data.phone,
           role: data.role || 'client',
-          restaurant_id: data.restaurant_id,
+          restaurants: data.restaurants || [],
           displayName: data.displayName || `${data.firstName} ${data.lastName}`,
           createdAt: data.createdAt,
         };
@@ -65,10 +68,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userSnapshot = await get(child(dbRef, `users/${firebaseUser.uid}`));
       
       if (userSnapshot.exists()) {
+        const legacyData = userSnapshot.val();
         return {
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
-          ...userSnapshot.val(),
+          firstName: legacyData.firstName,
+          lastName: legacyData.lastName,
+          role: legacyData.role || 'client',
+          restaurants: legacyData.restaurant_id ? [legacyData.restaurant_id] : [],
+          ...legacyData,
         };
       }
 
@@ -77,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
         role: 'client',
+        restaurants: [],
       };
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -106,23 +115,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (data: RegisterData) => {
-    const { email, password, firstName, lastName, country, phonePrefix, phoneNumber } = data;
+    const { 
+      email, 
+      password, 
+      firstName, 
+      lastName, 
+      country, 
+      phonePrefix, 
+      phoneNumber,
+      restaurantName,
+      restaurantAddress,
+      chainName 
+    } = data;
     
     // Create auth user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { uid } = userCredential.user;
+    
+    const createdAt = formatDateWithTimezone();
+    const fullPhone = `${phonePrefix}${phoneNumber}`;
 
-    // Create user profile in Firestore
+    // Create restaurant document first
+    const restaurantData: Omit<RestaurantData, 'id'> = {
+      name: restaurantName,
+      address: restaurantAddress,
+      chainName: chainName || '',
+      ownerUid: uid,
+      status: '',
+      masterController: '',
+      allowed_masters: [],
+      users: [email],
+      createdAt,
+    };
+
+    const restaurantRef = await addDoc(collection(firestore, 'restaurants'), restaurantData);
+    const restaurantId = restaurantRef.id;
+
+    // Create user profile in Firestore with restaurant ID
     const userProfileData = {
       email,
       firstName,
       lastName,
       country,
-      phonePrefix,
-      phoneNumber,
+      phone: fullPhone,
       role: 'client',
+      restaurants: [restaurantId],
       displayName: `${firstName} ${lastName}`,
-      createdAt: Date.now(),
+      createdAt,
     };
 
     await setDoc(doc(firestore, 'users', uid), userProfileData);

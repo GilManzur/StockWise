@@ -24,12 +24,24 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   country?: string;
-  phonePrefix?: string;
-  phoneNumber?: string;
+  phone?: string;
   role: 'super_admin' | 'client';
-  restaurant_id?: string;
+  restaurants: string[];
   displayName?: string;
-  createdAt?: number;
+  createdAt?: string;
+}
+
+export interface RestaurantData {
+  id?: string;
+  name: string;
+  address: string;
+  chainName?: string;
+  ownerUid: string;
+  status: string;
+  masterController: string;
+  allowed_masters: string[];
+  users: string[];
+  createdAt: string;
 }
 
 export interface Alert {
