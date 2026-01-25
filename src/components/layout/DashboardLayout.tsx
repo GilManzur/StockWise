@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -51,13 +52,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <Scale className="h-6 w-6 text-primary" />
           <span className="font-semibold">ScaleSync</span>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Sidebar */}
@@ -107,8 +111,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
           {/* User info & logout */}
           <div className="pt-4 border-t border-border">
+            <div className="hidden lg:flex items-center justify-between px-3 mb-3">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </div>
             <div className="px-3 py-2 mb-2">
-              <p className="text-sm font-medium truncate">{userProfile?.email}</p>
+              <p className="text-sm font-medium truncate">
+                {userProfile?.displayName || userProfile?.email}
+              </p>
               <p className="text-xs text-muted-foreground capitalize">
                 {userProfile?.role?.replace('_', ' ')}
               </p>
