@@ -21,9 +21,15 @@ export interface Device {
 export interface UserProfile {
   uid: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  phonePrefix?: string;
+  phoneNumber?: string;
   role: 'super_admin' | 'client';
   restaurant_id?: string;
   displayName?: string;
+  createdAt?: number;
 }
 
 export interface Alert {
