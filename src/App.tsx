@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import ClientDashboard from "./pages/ClientDashboard";
+import RestaurantDashboard from "./pages/RestaurantDashboard";
+import AddRestaurant from "./pages/AddRestaurant";
 import ClientSettings from "./pages/ClientSettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRestaurants from "./pages/AdminRestaurants";
@@ -31,6 +33,16 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute requiredRole="client">
                 <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/:restaurantId" element={
+              <ProtectedRoute requiredRole="client">
+                <RestaurantDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/add-restaurant" element={
+              <ProtectedRoute requiredRole="client">
+                <AddRestaurant />
               </ProtectedRoute>
             } />
             <Route path="/dashboard/settings" element={

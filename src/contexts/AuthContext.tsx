@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { ref, get, child } from 'firebase/database';
-import { auth, database, firestore, createUserWithEmailAndPassword, doc, setDoc, getDoc, collection, addDoc, updateDoc, arrayUnion } from '@/lib/firebase';
-import { UserProfile, RestaurantData } from '@/types';
+import { auth, database, firestore, createUserWithEmailAndPassword, doc, setDoc, getDoc } from '@/lib/firebase';
+import { UserProfile } from '@/types';
 import { formatDateWithTimezone } from '@/lib/dateUtils';
 
 interface RegisterData {
@@ -13,9 +13,6 @@ interface RegisterData {
   country: string;
   phonePrefix: string;
   phoneNumber: string;
-  restaurantName: string;
-  restaurantAddress: string;
-  chainName?: string;
 }
 
 interface AuthContextType {
@@ -123,9 +120,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       country, 
       phonePrefix, 
       phoneNumber,
-      restaurantName,
-      restaurantAddress,
-      chainName 
     } = data;
     
     // Create auth user
@@ -135,23 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const createdAt = formatDateWithTimezone();
     const fullPhone = `${phonePrefix}${phoneNumber}`;
 
-    // Create restaurant document first
-    const restaurantData: Omit<RestaurantData, 'id'> = {
-      name: restaurantName,
-      address: restaurantAddress,
-      chainName: chainName || '',
-      ownerUid: uid,
-      status: '',
-      masterController: '',
-      allowed_masters: [],
-      users: [email],
-      createdAt,
-    };
-
-    const restaurantRef = await addDoc(collection(firestore, 'restaurants'), restaurantData);
-    const restaurantId = restaurantRef.id;
-
-    // Create user profile in Firestore with restaurant ID
+    // Create user profile in Firestore with empty restaurants array
     const userProfileData = {
       email,
       firstName,
@@ -159,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       country,
       phone: fullPhone,
       role: 'client',
-      restaurants: [restaurantId],
+      restaurants: [],
       displayName: `${firstName} ${lastName}`,
       createdAt,
     };

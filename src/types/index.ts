@@ -37,6 +37,7 @@ export interface RestaurantData {
   address: string;
   chainName?: string;
   ownerUid: string;
+  restaurant_code?: string;
   status: string;
   masterController: string;
   allowed_masters: string[];

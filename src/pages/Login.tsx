@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Scale, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Scale, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { countries, getDialCodeByCountry } from '@/data/countries';
 
 const loginSchema = z.object({
@@ -28,9 +28,6 @@ const registerSchema = z.object({
   phoneNumber: z.string().min(6, 'Phone number must be at least 6 digits').max(15, 'Phone number is too long').regex(/^\d+$/, 'Phone number must contain only digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(6, 'Please confirm your password'),
-  restaurantName: z.string().min(1, 'Restaurant name is required').max(100, 'Restaurant name is too long'),
-  restaurantAddress: z.string().min(1, 'Restaurant address is required').max(200, 'Address is too long'),
-  chainName: z.string().max(100, 'Chain name is too long').optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -66,22 +63,19 @@ const Login: React.FC = () => {
       phoneNumber: '',
       password: '',
       confirmPassword: '',
-      restaurantName: '',
-      restaurantAddress: '',
-      chainName: '',
     },
   });
 
   // Watch country to auto-update phone prefix
   const selectedCountry = registerForm.watch('country');
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedCountry) {
       const dialCode = getDialCodeByCountry(selectedCountry);
       registerForm.setValue('phonePrefix', dialCode);
     }
   }, [selectedCountry, registerForm]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (userProfile) {
       if (userProfile.role === 'super_admin') {
         navigate('/admin');
@@ -121,9 +115,6 @@ const Login: React.FC = () => {
         country: data.country,
         phonePrefix: data.phonePrefix,
         phoneNumber: data.phoneNumber,
-        restaurantName: data.restaurantName,
-        restaurantAddress: data.restaurantAddress,
-        chainName: data.chainName,
       });
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -150,9 +141,9 @@ const Login: React.FC = () => {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <Card className="w-full max-w-lg glass-card animate-scale-in relative">
+      <Card className="w-full max-w-lg relative">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto p-3 bg-primary/10 rounded-xl w-fit animate-pulse-glow">
+          <div className="mx-auto p-3 bg-primary/10 rounded-xl w-fit">
             <Scale className="h-8 w-8 text-primary" />
           </div>
           <div>
@@ -375,54 +366,6 @@ const Login: React.FC = () => {
                       )}
                     />
                   </div>
-
-                  {/* Restaurant Section Header */}
-                  <div className="pt-4 pb-2 border-t border-border">
-                    <h3 className="text-sm font-medium text-foreground">Restaurant Details</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Set up your first restaurant</p>
-                  </div>
-
-                  <FormField
-                    control={registerForm.control}
-                    name="restaurantName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Restaurant Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="My Restaurant" disabled={loading} className="h-11" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="restaurantAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main Street, City" disabled={loading} className="h-11" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="chainName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Chain Name (שם הרשת) - Optional</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Restaurant Chain" disabled={loading} className="h-11" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
                   {/* Password Section */}
                   <div className="pt-4 pb-2 border-t border-border">
