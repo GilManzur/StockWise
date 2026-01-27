@@ -1,30 +1,51 @@
-import React from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import SummaryCards from '@/components/dashboard/SummaryCards';
-import DeviceTable from '@/components/dashboard/DeviceTable';
-import { useRealtimeDevices } from '@/hooks/useRealtimeDevices';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
+import WelcomePage from './WelcomePage';
+import RestaurantLobby from './RestaurantLobby';
 
+/**
+ * Smart Dashboard Router
+ * - 0 restaurants: Show WelcomePage (create first restaurant)
+ * - 1 restaurant: Redirect to that restaurant's dashboard
+ * - 2+ restaurants: Show RestaurantLobby (selection screen)
+ */
 const ClientDashboard: React.FC = () => {
-  const { userProfile } = useAuth();
-  // Use the first restaurant ID from the array for now
-  const { devices, loading } = useRealtimeDevices(userProfile?.restaurants?.[0]);
+  const { userProfile, loading } = useAuth();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
 
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Real-time monitoring of your weighing stations
-          </p>
-        </div>
+  useEffect(() => {
+    if (loading) return;
 
-        <SummaryCards devices={devices} />
-        <DeviceTable devices={devices} loading={loading} />
+    const restaurantCount = userProfile?.restaurants?.length || 0;
+
+    if (restaurantCount === 1) {
+      // Single restaurant - redirect directly to its dashboard
+      navigate(`/dashboard/${userProfile!.restaurants[0]}`, { replace: true });
+    } else {
+      // 0 or multiple restaurants - show appropriate component
+      setChecking(false);
+    }
+  }, [userProfile, loading, navigate]);
+
+  if (loading || checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    </DashboardLayout>
-  );
+    );
+  }
+
+  const restaurantCount = userProfile?.restaurants?.length || 0;
+
+  if (restaurantCount === 0) {
+    return <WelcomePage />;
+  }
+
+  // Multiple restaurants
+  return <RestaurantLobby />;
 };
 
 export default ClientDashboard;
