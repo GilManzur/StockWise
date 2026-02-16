@@ -1,12 +1,13 @@
 /**
  * slotProjection — pure functions that merge Firestore config + RTDB live
- * data into a SlotViewModel.
+ * data + SKU config into a SlotViewModel.
  *
  * ⚠️  No Firebase / React imports allowed in this file.
  */
-import { SlotConfig } from './SlotConfig';
-import { SlotLiveState } from './SlotLiveState';
-import { SlotViewModel } from './SlotViewModel';
+import type { SlotConfig } from './SlotConfig';
+import type { SkuConfig } from './SkuConfig';
+import type { SlotLiveState } from './SlotLiveState';
+import type { SlotViewModel } from './SlotViewModel';
 import {
   SlotStatus,
   FLAGS,
@@ -14,22 +15,27 @@ import {
   STALE_THRESHOLD_MS,
 } from './SlotStatus';
 
+/** Default absolute quantity threshold for LOW status. */
+export const DEFAULT_LOW_THRESHOLD = 2;
+
 /**
  * Resolve the single highest-priority status for a slot.
  *
  * Priority chain (highest → lowest):
  *   OFFLINE_NODE → STALE → ERROR_SENSOR → CALIBRATING → UNCALIBRATED → EMPTY → LOW → OK
  *
- * @param config      Firestore slot configuration
- * @param live        RTDB live state (null if no data received yet)
- * @param nodeOnline  Whether the node exists in nodes_live and is reporting
- * @param now         Current timestamp for stale calculation (injectable for tests)
+ * @param config       Firestore slot configuration
+ * @param live         RTDB live state (null if no data received yet)
+ * @param nodeOnline   Whether the node exists in nodes_live and is reporting
+ * @param now          Current timestamp for stale calculation (injectable for tests)
+ * @param lowThreshold Absolute quantity at or below which status becomes LOW
  */
 export function resolveStatus(
   config: SlotConfig,
   live: SlotLiveState | null,
   nodeOnline: boolean,
   now: number = Date.now(),
+  lowThreshold: number = DEFAULT_LOW_THRESHOLD,
 ): SlotStatus {
   // 1. OFFLINE — no live data whatsoever OR node not present in nodes_live
   if (!live || !nodeOnline) {
@@ -51,34 +57,30 @@ export function resolveStatus(
     return SlotStatus.CALIBRATING;
   }
 
-  // 5. UNCALIBRATED — config says tare was never set
-  if (config.calibrationTareGrams === 0) {
+  // 5. UNCALIBRATED — tare was never set
+  if (config.tareG === 0) {
     return SlotStatus.UNCALIBRATED;
   }
 
   // 6–8. Quantity-based statuses
-  const fillPct =
-    config.maxQuantity > 0 ? live.quantity / config.maxQuantity : 0;
-
   if (live.quantity <= 0) return SlotStatus.EMPTY;
-  if (fillPct <= config.lowThresholdPct) return SlotStatus.LOW;
+  if (live.quantity <= lowThreshold) return SlotStatus.LOW;
 
   return SlotStatus.OK;
 }
 
 /**
- * Project a single slot from config + live data into a fully resolved ViewModel.
+ * Project a single slot from config + live data + SKU into a fully resolved ViewModel.
  */
 export function projectSlot(
   config: SlotConfig,
   live: SlotLiveState | null,
+  sku: SkuConfig | null,
   nodeOnline: boolean,
   now: number = Date.now(),
+  lowThreshold: number = DEFAULT_LOW_THRESHOLD,
 ): SlotViewModel {
-  const status = resolveStatus(config, live, nodeOnline, now);
-
-  const fillPct =
-    live && config.maxQuantity > 0 ? live.quantity / config.maxQuantity : 0;
+  const status = resolveStatus(config, live, nodeOnline, now, lowThreshold);
 
   return {
     // Identity
@@ -86,15 +88,14 @@ export function projectSlot(
     shelfId: config.shelfId,
     locationId: config.locationId,
     networkId: config.networkId,
-    shelfLabel: config.shelfLabel,
+    slotName: config.name,
 
     // Product
     skuId: config.skuId,
-    skuName: config.skuName,
+    skuName: sku?.name ?? '',
     quantity: live?.quantity ?? 0,
-    maxQuantity: config.maxQuantity,
-    fillPct,
     confidence: live?.confidence ?? 0,
+    netWeightG: live?.net_weight_g ?? 0,
 
     // Resolved status
     status,
@@ -110,13 +111,12 @@ export function projectSlot(
 
     // Hardware refs
     nodeId: config.nodeId,
-    brainId: config.brainId,
     updatedAt: live?.updated_at ?? 0,
     flags: live?.flags ?? 0,
     seq: live?.seq ?? 0,
 
     // Meta
-    isActive: config.isActive,
+    isActive: config.status === 'active',
   };
 }
 
@@ -125,24 +125,29 @@ export function projectSlot(
  *
  * @param configs      Map<slotId, SlotConfig>
  * @param liveStates   Map<slotId, SlotLiveState>
+ * @param skus         Map<skuId, SkuConfig>
  * @param onlineNodes  Set of nodeId (MAC) strings currently present in nodes_live
  * @param now          Injectable timestamp
+ * @param lowThreshold Absolute quantity threshold for LOW status
  */
 export function projectLocation(
   configs: Map<string, SlotConfig>,
   liveStates: Map<string, SlotLiveState>,
+  skus: Map<string, SkuConfig>,
   onlineNodes: Set<string>,
   now: number = Date.now(),
+  lowThreshold: number = DEFAULT_LOW_THRESHOLD,
 ): SlotViewModel[] {
   const results: SlotViewModel[] = [];
 
   configs.forEach((config) => {
-    if (!config.isActive) return;
+    if (config.status !== 'active') return;
 
     const live = liveStates.get(config.slotId) ?? null;
+    const sku = skus.get(config.skuId) ?? null;
     const nodeOnline = onlineNodes.has(config.nodeId);
 
-    results.push(projectSlot(config, live, nodeOnline, now));
+    results.push(projectSlot(config, live, sku, nodeOnline, now, lowThreshold));
   });
 
   return results;

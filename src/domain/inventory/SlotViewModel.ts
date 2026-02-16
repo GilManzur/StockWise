@@ -3,7 +3,7 @@ import { SlotStatus } from './SlotStatus';
 /**
  * SlotViewModel — the single merged representation consumed by UI components.
  *
- * Produced by the pure `projectSlot()` function from SlotConfig + SlotLiveState.
+ * Produced by the pure `projectSlot()` function from SlotConfig + SlotLiveState + SkuConfig.
  * Contains ZERO Firebase or React dependencies.
  */
 export interface SlotViewModel {
@@ -12,16 +12,14 @@ export interface SlotViewModel {
   shelfId: string;          // UUID
   locationId: string;       // UUID
   networkId: string;        // UUID
-  shelfLabel: string;
+  slotName: string;
 
   // ── Product ───────────────────────────────────────────────
   skuId: string;
   skuName: string;
   quantity: number;
-  maxQuantity: number;
-  /** quantity / maxQuantity  (0–1+) */
-  fillPct: number;
   confidence: number;
+  netWeightG: number;
 
   // ── Resolved status ───────────────────────────────────────
   status: SlotStatus;
@@ -37,7 +35,6 @@ export interface SlotViewModel {
 
   // ── Hardware refs (for diagnostics) ───────────────────────
   nodeId: string;           // MAC
-  brainId: string;          // UUID
   updatedAt: number;
   flags: number;
   seq: number;
